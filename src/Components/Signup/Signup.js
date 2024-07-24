@@ -1,58 +1,96 @@
-import React from 'react';
-
+import React, { useState, useContext } from 'react';
+import { useHistory } from 'react-router-dom';
 import Logo from '../../olx-logo.png';
 import './Signup.css';
+import { FirebaseContext } from '../../store/FirebaseContext';
 
 export default function Signup() {
+  const history = useHistory();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [error, setError] = useState(null);  // State to store error message
+  const { firebase } = useContext(FirebaseContext);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError(null);  // Reset error state
+    firebase.auth().createUserWithEmailAndPassword(email, password)
+      .then((result) => {
+        result.user.updateProfile({ displayName: username })
+          .then(() => {
+            firebase.firestore().collection('users').add({
+              id: result.user.uid,
+              username: username,
+              phone: phone
+            }).then(() => {
+              history.push('/login');
+            });
+          });
+      })
+      .catch((error) => {
+        setError(error.message);  // Set error message to display
+      });
+  };
+
   return (
     <div>
       <div className="signupParentDiv">
-        <img width="200px" height="200px" src={Logo}></img>
-        <form>
+        <img width="200px" height="200px" src={Logo} alt="Logo" />
+        <form onSubmit={handleSubmit}>
           <label htmlFor="fname">Username</label>
           <br />
           <input
             className="input"
             type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             id="fname"
             name="name"
-            defaultValue="John"
+            placeholder="Username"
           />
           <br />
-          <label htmlFor="fname">Email</label>
+          <label htmlFor="email">Email</label>
           <br />
           <input
             className="input"
             type="email"
-            id="fname"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            id="email"
             name="email"
-            defaultValue="John"
+            placeholder="Email"
           />
           <br />
-          <label htmlFor="lname">Phone</label>
+          <label htmlFor="phone">Phone</label>
           <br />
           <input
             className="input"
-            type="number"
-            id="lname"
+            type="text"
+            id="phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
             name="phone"
-            defaultValue="Doe"
+            placeholder="Phone"
           />
           <br />
-          <label htmlFor="lname">Password</label>
+          <label htmlFor="password">Password</label>
           <br />
           <input
             className="input"
             type="password"
-            id="lname"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             name="password"
-            defaultValue="Doe"
+            placeholder="Password"
           />
           <br />
-          <br />
-          <button>Signup</button>
+          {error && <p className="error-message">{error}</p>}  {/* Display error message */}
+          <button type="submit">Signup</button>
         </form>
-        <a>Login</a>
+        <a href="/login">Login</a>
       </div>
     </div>
   );
